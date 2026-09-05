@@ -18,7 +18,7 @@ def verify_razorpay_signature(
 
     try:
         expected_signature = hmac.new(
-            key=webhook_secret.encode("utf-8"),
+            key=webhook_secret.strip().encode("utf-8"),
             msg=raw_body,
             digestmod=hashlib.sha256
         ).hexdigest()

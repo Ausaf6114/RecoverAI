@@ -23,8 +23,20 @@ class Settings(BaseSettings):
     # Razorpay Webhook Secret (separate from API Key Secret)
     RAZORPAY_WEBHOOK_SECRET: Optional[str] = None
 
-    # Minimal SQLite database path for Phase 0 event persistence
+    # SQLite database path — used for webhook_events (Phase 0, backward compat)
     DATABASE_PATH: str = "recoverai.db"
+
+    # SQLAlchemy database URL — Phase 1+
+    # Local default: SQLite (file-based, no setup required)
+    # Production: set to postgresql+psycopg2://user:password@host/dbname
+    DATABASE_URL: str = "sqlite:///recoverai.db"
+
+    # Google Gemini API Key — used by the LLM diagnosis component (Phase 3)
+    GEMINI_API_KEY: Optional[str] = None
+
+    # Razorpay API credentials (read-only; kept backend-side, never exposed to frontend)
+    RAZORPAY_KEY_ID: Optional[str] = None
+    RAZORPAY_KEY_SECRET: Optional[str] = None
 
 
 @lru_cache

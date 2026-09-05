@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.core.config import get_settings
-from app.db.session import init_db
+from app.db.session import init_db, init_domain_db
 from app.api.webhooks import router as webhooks_router
 
 
@@ -10,6 +10,8 @@ async def lifespan(app: FastAPI):
     """Application startup and shutdown events."""
     # Initialize minimal webhook database schema
     init_db()
+    # Initialize domain database schema
+    init_domain_db()
     yield
 
 

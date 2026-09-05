@@ -1,6 +1,31 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
+// ─── CSS injected once for spinner + row hover ─────────────────────────────
+const _globalStyles = `
+@keyframes rz-spin { to { transform: rotate(360deg); } }
+.rz-spinner {
+  display: inline-block;
+  width: 22px; height: 22px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: rz-spin 0.7s linear infinite;
+}
+.rz-table tbody tr {
+  transition: background 0.1s;
+}
+.rz-table tbody tr:hover {
+  background: var(--accent-light);
+}
+`;
+if (typeof document !== "undefined" && !document.getElementById("rz-ui-styles")) {
+  const s = document.createElement("style");
+  s.id = "rz-ui-styles";
+  s.textContent = _globalStyles;
+  document.head.appendChild(s);
+}
+
 // ─── Card ──────────────────────────────────────────────────────────────────
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -41,10 +66,10 @@ export function StatCard({ label, value, sub, accent }: StatCardProps) {
       <div
         style={{
           fontSize: "0.75rem",
-          fontWeight: 500,
+          fontWeight: 600,
           color: "var(--text-muted)",
           textTransform: "uppercase",
-          letterSpacing: "0.04em",
+          letterSpacing: "0.05em",
           marginBottom: 8,
         }}
       >
@@ -52,18 +77,18 @@ export function StatCard({ label, value, sub, accent }: StatCardProps) {
       </div>
       <div
         style={{
-          fontSize: "1.5rem",
+          fontSize: "1.625rem",
           fontWeight: 600,
           letterSpacing: "-0.03em",
-          color: accent ? "var(--accent)" : "var(--text-primary)",
-          lineHeight: 1,
+          color: accent ? "var(--success)" : "var(--navy)",
+          lineHeight: 1.15,
           marginBottom: sub ? 6 : 0,
         }}
       >
         {value}
       </div>
       {sub && (
-        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{sub}</div>
+        <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{sub}</div>
       )}
     </Card>
   );
@@ -79,12 +104,12 @@ interface BadgeProps {
 }
 
 const BADGE_STYLES: Record<BadgeVariant, React.CSSProperties> = {
-  green: { background: "#ecfdf5", color: "#065f46", border: "1px solid #a7f3d0" },
-  red: { background: "#fef2f2", color: "#991b1b", border: "1px solid #fca5a5" },
-  yellow: { background: "#fffbeb", color: "#92400e", border: "1px solid #fde68a" },
-  blue: { background: "#eff6ff", color: "#1e40af", border: "1px solid #bfdbfe" },
-  purple: { background: "#faf5ff", color: "#6b21a8", border: "1px solid #d8b4fe" },
-  gray: { background: "#f9fafb", color: "#374151", border: "1px solid #e5e7eb" },
+  green: { background: "#e6f9f3", color: "#008761", border: "1px solid #99e7d1" },
+  red: { background: "#fef2f2", color: "#b91c1c", border: "1px solid #fecaca" },
+  yellow: { background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" },
+  blue: { background: "#f0f7ff", color: "#1f75d9", border: "1px solid #c2e0ff" },
+  purple: { background: "#f5f3ff", color: "#6d28d9", border: "1px solid #ddd6fe" },
+  gray: { background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0" },
 };
 
 export function Badge({ children, variant = "gray" }: BadgeProps) {
@@ -94,7 +119,7 @@ export function Badge({ children, variant = "gray" }: BadgeProps) {
         display: "inline-flex",
         alignItems: "center",
         borderRadius: 4,
-        padding: "2px 7px",
+        padding: "2px 8px",
         fontSize: "0.6875rem",
         fontWeight: 500,
         whiteSpace: "nowrap",
@@ -132,12 +157,14 @@ const BTN_STYLES: Record<string, React.CSSProperties> = {
   primary: {
     background: "var(--accent)",
     color: "#fff",
-    border: "1px solid transparent",
+    border: "1px solid #2684ee",
+    boxShadow: "0 1px 3px rgba(51, 149, 255, 0.28)",
   },
   secondary: {
     background: "#fff",
-    color: "var(--text-primary)",
+    color: "var(--navy)",
     border: "1px solid var(--border)",
+    boxShadow: "var(--shadow-sm)",
   },
   ghost: {
     background: "transparent",
@@ -146,8 +173,8 @@ const BTN_STYLES: Record<string, React.CSSProperties> = {
   },
   danger: {
     background: "#fef2f2",
-    color: "#991b1b",
-    border: "1px solid #fca5a5",
+    color: "#b91c1c",
+    border: "1px solid #fecaca",
   },
 };
 
@@ -190,6 +217,7 @@ export function Table({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ overflowX: "auto" }}>
       <table
+        className="rz-table"
         style={{
           width: "100%",
           borderCollapse: "collapse",
@@ -251,9 +279,14 @@ export function Loading({ label = "Loading…" }: { label?: string }) {
         textAlign: "center",
         color: "var(--text-muted)",
         fontSize: "0.875rem",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 12,
       }}
     >
-      {label}
+      <span className="rz-spinner" />
+      <span>{label}</span>
     </div>
   );
 }
@@ -279,13 +312,21 @@ export function EmptyState({ message = "No data found." }: { message?: string })
   return (
     <div
       style={{
-        padding: "48px 24px",
+        position: "relative",
+        overflow: "hidden",
+        padding: "54px 24px",
         textAlign: "center",
-        color: "var(--text-muted)",
-        fontSize: "0.875rem",
+        borderRadius: "var(--radius)",
+        border: "1px dashed var(--border)",
+        background: "var(--surface)",
       }}
     >
-      {message}
+      <div className="organic-blob-empty" aria-hidden="true" />
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ color: "var(--text-secondary)", fontSize: "0.875rem", fontWeight: 500 }}>
+          {message}
+        </div>
+      </div>
     </div>
   );
 }
@@ -311,14 +352,21 @@ export function PageHeader({
       }}
     >
       <div>
-        <h1 style={{ marginBottom: subtitle ? 4 : 0 }}>{title}</h1>
+        <h1
+          style={{
+            marginBottom: subtitle ? 4 : 0,
+            fontFamily: "var(--font-serif)",
+          }}
+        >
+          {title}
+        </h1>
         {subtitle && (
-          <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)" }}>
+          <p style={{ fontSize: "0.875rem", color: "var(--text-secondary)", marginTop: 2 }}>
             {subtitle}
           </p>
         )}
       </div>
-      {action && <div>{action}</div>}
+      {action && <div style={{ flexShrink: 0 }}>{action}</div>}
     </div>
   );
 }
@@ -342,10 +390,12 @@ export function Section({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: 12,
+            marginBottom: 14,
+            paddingBottom: 10,
+            borderBottom: "1px solid var(--border-subtle)",
           }}
         >
-          <h2>{title}</h2>
+          <h2 style={{ fontSize: "1rem", fontWeight: 600, color: "var(--navy)" }}>{title}</h2>
           {action}
         </div>
       )}

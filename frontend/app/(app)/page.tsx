@@ -11,6 +11,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  CartesianGrid,
+  LabelList,
 } from "recharts";
 import { api, AnalyticsResponse, OpportunitySummary } from "@/lib/api";
 import { formatINR, pct, relativeTime, actionLabel } from "@/lib/utils";
@@ -29,11 +31,12 @@ import {
   Button,
 } from "@/components/ui";
 
+// Canonical color map — matches Analytics page exactly
 const ACTION_COLORS: Record<string, string> = {
-  payment_link: "#e11d48",
-  delayed_retry: "#2563eb",
-  reminder: "#d97706",
-  no_action: "#9ca3af",
+  payment_link: "#3395FF",   // Razorpay blue
+  delayed_retry: "#00C48C",  // Razorpay green (was #192839 — FIXED)
+  reminder: "#f59e0b",       // Amber
+  no_action: "#94a3b8",      // Neutral slate
 };
 
 export default function OverviewPage() {
@@ -64,57 +67,82 @@ export default function OverviewPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Overview"
-        subtitle="Live revenue recovery performance"
-        action={
-          <Link href="/opportunities">
-            <Button variant="primary" size="sm">
-              View Opportunities <ArrowRight size={13} />
-            </Button>
-          </Link>
-        }
-      />
+      {/* Top Banner with Soft Organic Gradient Blob Accent */}
+      <div style={{ position: "relative", marginBottom: 28 }}>
+        <div className="organic-blob-header" aria-hidden="true" />
+        
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <PageHeader
+            title="Overview"
+            subtitle="Live revenue recovery performance & autonomous interventions"
+            action={
+              <Link href="/opportunities">
+                <Button variant="primary" size="sm">
+                  View Opportunities <ArrowRight size={13} />
+                </Button>
+              </Link>
+            }
+          />
 
-      {/* Top KPI Strip */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 16,
-          marginBottom: 28,
-        }}
-      >
-        <StatCard
-          label="Revenue at Risk"
-          value={formatINR(analytics.total_at_risk_gmv_inr)}
-          sub={`${analytics.total_opportunities} opportunities`}
-        />
-        <StatCard
-          label="Recovered Revenue"
-          value={formatINR(analytics.total_recovered_gmv_inr)}
-          sub={`${analytics.recovered_opportunities} recovered`}
-          accent
-        />
-        <StatCard
-          label="Net Revenue"
-          value={formatINR(analytics.net_revenue_inr)}
-          sub={`After ₹${analytics.total_action_cost_inr.toFixed(0)} action cost`}
-        />
-        <StatCard
-          label="Recovery Rate"
-          value={pct(analytics.recovery_rate)}
-          sub={`Baseline ${pct(bb.baseline_recovery_rate)}`}
-        />
+          {/* Top KPI Strip */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 16,
+            }}
+          >
+            <StatCard
+              label="Revenue at Risk"
+              value={formatINR(analytics.total_at_risk_gmv_inr)}
+              sub={`${analytics.total_opportunities} opportunities`}
+            />
+            <StatCard
+              label="Recovered Revenue"
+              value={formatINR(analytics.total_recovered_gmv_inr)}
+              sub={`${analytics.recovered_opportunities} recovered`}
+              accent
+            />
+            <StatCard
+              label="Net Revenue"
+              value={formatINR(analytics.net_revenue_inr)}
+              sub={`After ₹${analytics.total_action_cost_inr.toFixed(0)} action cost`}
+            />
+            <StatCard
+              label="Recovery Rate"
+              value={pct(analytics.recovery_rate)}
+              sub={`Baseline ${pct(bb.baseline_recovery_rate)}`}
+            />
+          </div>
+        </div>
       </div>
 
       {/* AI Uplift Banner */}
-      <Card padding="16px 20px" style={{ marginBottom: 28, borderLeft: "3px solid var(--accent)" }}>
+      <Card
+        padding="16px 20px"
+        style={{
+          marginBottom: 28,
+          borderLeft: "3px solid var(--success)",
+          background: "linear-gradient(90deg, #f0fdf9 0%, #ffffff 70%)",
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <TrendingUp size={18} color="var(--accent)" />
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: "var(--success-light)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <TrendingUp size={18} color="var(--success-dark)" />
+            </div>
             <div>
-              <div style={{ fontWeight: 500, fontSize: "0.875rem" }}>
+              <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "var(--navy)" }}>
                 RecoverAI Uplift vs. Baseline
               </div>
               <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: 2 }}>
@@ -123,16 +151,24 @@ export default function OverviewPage() {
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--accent)" }}>
+            <div
+              style={{
+                fontSize: "1.375rem",
+                fontWeight: 600,
+                color: "var(--success-dark)",
+                letterSpacing: "-0.02em",
+              }}
+            >
               +{bb.uplift_percentage.toFixed(1)}%
             </div>
-            <div style={{ fontSize: "0.6875rem", color: "var(--text-muted)" }}>uplift</div>
+            <div style={{ fontSize: "0.6875rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              uplift
+            </div>
           </div>
         </div>
       </Card>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 28 }}>
-        {/* Action Breakdown */}
         <Section title="Action Breakdown">
           <Card>
             {actionBreakdownData.length === 0 ? (
@@ -140,11 +176,20 @@ export default function OverviewPage() {
                 No actions yet.
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={actionBreakdownData} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={actionBreakdownData}
+                  margin={{ top: 28, right: 16, bottom: 8, left: -16 }}
+                  barSize={54}
+                >
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="#f1f5f9"
+                    strokeDasharray="0"
+                  />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: "#6b7280" }}
+                    tick={{ fontSize: 11, fill: "#6b7280", fontWeight: 500 }}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -155,19 +200,28 @@ export default function OverviewPage() {
                     allowDecimals={false}
                   />
                   <Tooltip
+                    cursor={{ fill: "rgba(51,149,255,0.06)", radius: 6 }}
                     contentStyle={{
+                      background: "#fff",
                       border: "1px solid var(--border)",
-                      borderRadius: 6,
+                      borderRadius: 8,
                       fontSize: 12,
-                      boxShadow: "var(--shadow)",
+                      boxShadow: "0 4px 12px rgba(25,40,57,0.08)",
+                      padding: "8px 12px",
                     }}
-                    cursor={{ fill: "var(--background)" }}
+                    formatter={(value: any, name: any) => [value, "Actions"]}
+                    labelStyle={{ fontWeight: 600, color: "var(--navy)", marginBottom: 2 }}
                   />
-                  <Bar dataKey="count" radius={[3, 3, 0, 0]}>
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                    <LabelList
+                      dataKey="count"
+                      position="top"
+                      style={{ fontSize: 11, fontWeight: 600, fill: "var(--text-secondary)" }}
+                    />
                     {actionBreakdownData.map((entry) => (
                       <Cell
                         key={entry.key}
-                        fill={ACTION_COLORS[entry.key] ?? "#9ca3af"}
+                        fill={ACTION_COLORS[entry.key] ?? "#94a3b8"}
                       />
                     ))}
                   </Bar>
@@ -183,19 +237,19 @@ export default function OverviewPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
               {[
                 {
-                  icon: <Clock size={14} color="#2563eb" />,
+                  icon: <Clock size={14} color="var(--accent)" />,
                   label: "Open Opportunities",
                   value: analytics.open_opportunities,
                   link: "/opportunities?status=open",
                 },
                 {
-                  icon: <AlertTriangle size={14} color="#d97706" />,
+                  icon: <AlertTriangle size={14} color="var(--warning)" />,
                   label: "Pending Approvals",
                   value: analytics.pending_approvals_count,
                   link: "/approvals",
                 },
                 {
-                  icon: <CheckCircle2 size={14} color="#059669" />,
+                  icon: <CheckCircle2 size={14} color="var(--success)" />,
                   label: "Recovered",
                   value: analytics.recovered_opportunities,
                   link: "/opportunities?status=recovered",

@@ -12,6 +12,8 @@ import {
   PieChart,
   Pie,
   Legend,
+  CartesianGrid,
+  LabelList,
 } from "recharts";
 import { api, AnalyticsResponse } from "@/lib/api";
 import { formatINR, pct, actionLabel } from "@/lib/utils";
@@ -27,14 +29,14 @@ import {
 } from "@/components/ui";
 
 const ACTION_COLORS: Record<string, string> = {
-  payment_link: "#e11d48",
-  delayed_retry: "#2563eb",
-  reminder: "#d97706",
-  no_action: "#9ca3af",
+  payment_link: "#3395FF",   // Razorpay blue
+  delayed_retry: "#00C48C",  // Razorpay green
+  reminder: "#f59e0b",       // Amber
+  no_action: "#94a3b8",      // Slate
 };
 
-const BASELINE_COLOR = "#d1d5db";
-const RECOVERAI_COLOR = "#e11d48";
+const BASELINE_COLOR = "#cbd5e1";      // Neutral slate
+const RECOVERAI_COLOR = "#3395FF";    // Razorpay blue
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsResponse | null>(null);
@@ -81,11 +83,11 @@ export default function AnalyticsPage() {
       />
 
       {/* Top KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, marginBottom: 32 }}>
         <StatCard
           label="Total Opportunities"
           value={data.total_opportunities.toLocaleString()}
-          sub={`${data.open_opportunities} open, ${data.recovered_opportunities} recovered`}
+          sub={`${data.open_opportunities} open · ${data.recovered_opportunities} recovered`}
         />
         <StatCard
           label="Net Revenue Recovered"
@@ -96,44 +98,96 @@ export default function AnalyticsPage() {
         <StatCard
           label="AI Uplift vs Baseline"
           value={`+${bb.uplift_percentage.toFixed(1)}%`}
-          sub={`+${formatINR(bb.incremental_recovered_gmv_inr)} incremental`}
+          sub={`+${formatINR(bb.incremental_recovered_gmv_inr)} incremental GMV`}
           accent
         />
       </div>
 
       {/* Baseline vs RecoverAI */}
       <Section title="Baseline vs. RecoverAI">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <Card>
-            <h3 style={{ marginBottom: 16 }}>Recovery Rate Comparison</h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={[comparisonData[0]]} margin={{ top: 0, right: 8, bottom: 0, left: -16 }}>
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
+            <h3 style={{ marginBottom: 4, fontSize: "0.875rem", fontWeight: 600, color: "var(--navy)" }}>
+              Recovery Rate Comparison
+            </h3>
+            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: 16 }}>
+              Baseline algorithm vs. RecoverAI model
+            </p>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart
+                data={[comparisonData[0]]}
+                margin={{ top: 24, right: 12, bottom: 4, left: -12 }}
+                barSize={44}
+                barCategoryGap="40%"
+              >
+                <CartesianGrid vertical={false} stroke="#f1f5f9" strokeDasharray="0" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} unit="%" />
                 <Tooltip
-                  formatter={(v: any) => [`${v}%`]}
-                  contentStyle={{ border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 }}
+                  formatter={(v: any, name: any) => [`${v}%`, name === "recoverai" ? "RecoverAI" : "Baseline"]}
+                  contentStyle={{
+                    background: "#fff",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    boxShadow: "0 4px 12px rgba(25,40,57,0.08)",
+                    padding: "8px 12px",
+                  }}
+                  cursor={{ fill: "rgba(51,149,255,0.05)" }}
                 />
-                <Bar dataKey="baseline" name="Baseline" fill={BASELINE_COLOR} radius={[3, 3, 0, 0]} />
-                <Bar dataKey="recoverai" name="RecoverAI" fill={RECOVERAI_COLOR} radius={[3, 3, 0, 0]} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="baseline" name="Baseline" fill={BASELINE_COLOR} radius={[5, 5, 0, 0]}>
+                  <LabelList dataKey="baseline" position="top" formatter={(v: any) => `${v}%`} style={{ fontSize: 11, fontWeight: 600, fill: "#64748b" }} />
+                </Bar>
+                <Bar dataKey="recoverai" name="RecoverAI" fill={RECOVERAI_COLOR} radius={[5, 5, 0, 0]}>
+                  <LabelList dataKey="recoverai" position="top" formatter={(v: any) => `${v}%`} style={{ fontSize: 11, fontWeight: 600, fill: RECOVERAI_COLOR }} />
+                </Bar>
+                <Legend
+                  wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                  formatter={(value) => <span style={{ color: "var(--text-secondary)" }}>{value}</span>}
+                />
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
           <Card>
-            <h3 style={{ marginBottom: 16 }}>Recovered GMV (₹K)</h3>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={[comparisonData[1]]} margin={{ top: 0, right: 8, bottom: 0, left: -16 }}>
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} unit="K" />
+            <h3 style={{ marginBottom: 4, fontSize: "0.875rem", fontWeight: 600, color: "var(--navy)" }}>
+              Recovered GMV
+            </h3>
+            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: 16 }}>
+              In ₹ thousands (K)
+            </p>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart
+                data={[comparisonData[1]]}
+                margin={{ top: 24, right: 12, bottom: 4, left: -12 }}
+                barSize={44}
+                barCategoryGap="40%"
+              >
+                <CartesianGrid vertical={false} stroke="#f1f5f9" strokeDasharray="0" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} unit="K" />
                 <Tooltip
-                  formatter={(v: any) => [`₹${v}K`]}
-                  contentStyle={{ border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 }}
+                  formatter={(v: any, name: any) => [`₹${v}K`, name === "recoverai" ? "RecoverAI" : "Baseline"]}
+                  contentStyle={{
+                    background: "#fff",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    boxShadow: "0 4px 12px rgba(25,40,57,0.08)",
+                    padding: "8px 12px",
+                  }}
+                  cursor={{ fill: "rgba(51,149,255,0.05)" }}
                 />
-                <Bar dataKey="baseline" name="Baseline" fill={BASELINE_COLOR} radius={[3, 3, 0, 0]} />
-                <Bar dataKey="recoverai" name="RecoverAI" fill={RECOVERAI_COLOR} radius={[3, 3, 0, 0]} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="baseline" name="Baseline" fill={BASELINE_COLOR} radius={[5, 5, 0, 0]}>
+                  <LabelList dataKey="baseline" position="top" formatter={(v: any) => `₹${v}K`} style={{ fontSize: 11, fontWeight: 600, fill: "#64748b" }} />
+                </Bar>
+                <Bar dataKey="recoverai" name="RecoverAI" fill={RECOVERAI_COLOR} radius={[5, 5, 0, 0]}>
+                  <LabelList dataKey="recoverai" position="top" formatter={(v: any) => `₹${v}K`} style={{ fontSize: 11, fontWeight: 600, fill: RECOVERAI_COLOR }} />
+                </Bar>
+                <Legend
+                  wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                  formatter={(value) => <span style={{ color: "var(--text-secondary)" }}>{value}</span>}
+                />
               </BarChart>
             </ResponsiveContainer>
           </Card>
@@ -141,7 +195,6 @@ export default function AnalyticsPage() {
       </Section>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-        {/* Action Distribution */}
         <Section title="Action Distribution">
           <Card>
             {pieData.length === 0 ? (
@@ -149,25 +202,33 @@ export default function AnalyticsPage() {
                 No actions recorded yet.
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
                   <Pie
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
+                    innerRadius={58}
+                    outerRadius={90}
                     dataKey="value"
-                    paddingAngle={2}
+                    paddingAngle={3}
                     label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                     labelLine={false}
                   >
                     {pieData.map((entry) => (
-                      <Cell key={entry.key} fill={ACTION_COLORS[entry.key] ?? "#9ca3af"} />
+                      <Cell key={entry.key} fill={ACTION_COLORS[entry.key] ?? "#94a3b8"} />
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 }}
+                    contentStyle={{
+                      background: "#fff",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      boxShadow: "0 4px 12px rgba(25,40,57,0.08)",
+                      padding: "8px 12px",
+                    }}
+                    formatter={(value: any, name: any) => [value, name]}
                   />
                 </PieChart>
               </ResponsiveContainer>

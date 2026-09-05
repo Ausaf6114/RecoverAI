@@ -37,6 +37,18 @@ class ExecutionResult:
 
 
 _UNSET = object()
+_default_razorpay_client: Optional[httpx.Client] = None
+
+
+def set_default_razorpay_client(client: Optional[httpx.Client]) -> None:
+    """Sets a global default HTTP client for Razorpay adapters (used for mocking/testing)."""
+    global _default_razorpay_client
+    _default_razorpay_client = client
+
+
+def get_default_razorpay_client() -> Optional[httpx.Client]:
+    """Returns the current default HTTP client for Razorpay adapters."""
+    return _default_razorpay_client
 
 
 class RazorpayActionAdapter:
@@ -50,11 +62,13 @@ class RazorpayActionAdapter:
         key_id: Any = _UNSET,
         key_secret: Any = _UNSET,
         base_url: str = "https://api.razorpay.com/v1",
+        http_client: Optional[httpx.Client] = None,
     ):
         settings = get_settings()
         self.key_id = settings.RAZORPAY_KEY_ID if key_id is _UNSET else key_id
         self.key_secret = settings.RAZORPAY_KEY_SECRET if key_secret is _UNSET else key_secret
         self.base_url = base_url
+        self.http_client = http_client if http_client is not None else get_default_razorpay_client()
 
         # Validate Test Mode safety
         self._validate_test_mode_safety()
@@ -157,8 +171,8 @@ class RazorpayActionAdapter:
         }
 
         try:
-            with httpx.Client(timeout=10.0) as client:
-                resp = client.post(
+            if self.http_client is not None:
+                resp = self.http_client.post(
                     url,
                     json=payload,
                     headers=headers,
@@ -166,6 +180,16 @@ class RazorpayActionAdapter:
                 )
                 resp.raise_for_status()
                 data = resp.json()
+            else:
+                with httpx.Client(timeout=10.0) as client:
+                    resp = client.post(
+                        url,
+                        json=payload,
+                        headers=headers,
+                        auth=(self.key_id, self.key_secret),
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
 
             return ExecutionResult(
                 strategy="payment_link",
@@ -173,6 +197,20 @@ class RazorpayActionAdapter:
                 reference_id=data.get("id"),
                 reference_url=data.get("short_url"),
                 raw_response=data,
+                is_simulated=False,
+            )
+        except httpx.HTTPStatusError as e:
+            raw_err = None
+            try:
+                raw_err = e.response.json()
+            except Exception:
+                pass
+            logger.error(f"Razorpay Payment Link creation failed with HTTP {e.response.status_code}: {raw_err or e}")
+            return ExecutionResult(
+                strategy="payment_link",
+                status="failed",
+                error_message=str(e),
+                raw_response=raw_err,
                 is_simulated=False,
             )
         except Exception as e:

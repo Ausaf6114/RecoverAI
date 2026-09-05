@@ -35,10 +35,14 @@ class Settings(BaseSettings):
     # Production: set to postgresql+psycopg2://user:password@host/dbname
     DATABASE_URL: str = "sqlite:///recoverai.db"
 
-    # Google Gemini API Key — used by the LLM diagnosis component (Phase 3)
+    # Google Gemini API Key & Model — used by the LLM diagnosis component (Phase 3)
     GEMINI_API_KEY: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices("GEMINI_API_KEY", "GOOGLE_API_KEY"),
+    )
+    GEMINI_MODEL: str = Field(
+        default="gemini-3.5-flash",
+        validation_alias=AliasChoices("GEMINI_MODEL", "GOOGLE_GEMINI_MODEL"),
     )
 
     # Razorpay API credentials (read-only; kept backend-side, never exposed to frontend)

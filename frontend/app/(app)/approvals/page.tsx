@@ -140,12 +140,21 @@ export default function ApprovalsPage() {
       </Section>
 
       {/* Info card */}
-      <Card style={{ marginTop: 20, borderLeft: "3px solid #d97706" }} padding="14px 18px">
-        <div style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-          <strong style={{ color: "var(--text-primary)" }}>About approvals: </strong>
+      <Card
+        style={{
+          marginTop: 20,
+          borderLeft: "3px solid var(--accent)",
+          background: "var(--accent-light)",
+          border: "1px solid var(--accent-border)",
+          borderLeftWidth: 3,
+        }}
+        padding="14px 18px"
+      >
+        <div style={{ fontSize: "0.8125rem", color: "var(--text-secondary)", lineHeight: 1.65 }}>
+          <strong style={{ color: "var(--accent)" }}>ⓘ  About approvals: </strong>
           RecoverAI gates high-value actions (payment links &gt; ₹1,000) for merchant review.
-          Clicking "Approve &amp; Run" triggers the agent pipeline and executes the action in
-          Razorpay Test Mode.
+          Clicking <strong>"Approve &amp; Run"</strong> triggers the agent pipeline and executes
+          the action in <strong>Razorpay Test Mode</strong>.
         </div>
       </Card>
     </div>

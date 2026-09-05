@@ -57,21 +57,33 @@ export default function OpportunitiesPage() {
       />
 
       {/* Status filter tabs */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 4,
+          marginBottom: 20,
+          background: "var(--border-subtle)",
+          borderRadius: 8,
+          padding: 4,
+          width: "fit-content",
+        }}
+      >
         {STATUS_FILTERS.map((s) => (
           <button
             key={s}
             onClick={() => handleStatus(s)}
             style={{
-              padding: "5px 14px",
-              borderRadius: 4,
+              padding: "5px 16px",
+              borderRadius: 6,
               fontSize: "0.8125rem",
-              fontWeight: status === s ? 500 : 400,
-              border: "1px solid",
-              borderColor: status === s ? "var(--accent)" : "var(--border)",
-              background: status === s ? "var(--accent-light)" : "#fff",
-              color: status === s ? "var(--accent)" : "var(--text-secondary)",
+              fontWeight: status === s ? 600 : 400,
+              border: "none",
+              background: status === s ? "#fff" : "transparent",
+              color: status === s ? "var(--accent)" : "var(--text-muted)",
               cursor: "pointer",
+              boxShadow: status === s ? "0 1px 3px rgba(25,40,57,0.08)" : "none",
+              transition: "all 0.15s ease",
+              letterSpacing: status === s ? "-0.01em" : "normal",
             }}
           >
             {s.charAt(0).toUpperCase() + s.slice(1)}

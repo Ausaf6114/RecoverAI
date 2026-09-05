@@ -102,3 +102,19 @@ class TestRazorpayAdapter:
         res2 = adapter.execute_action("payment_link", sample_context, "idemp_consistent_key")
         # Idempotency produces identical reference ID
         assert res1.reference_id == res2.reference_id
+
+    def test_injected_http_client_is_used(self, sample_context, fake_razorpay_http_client):
+        adapter = RazorpayActionAdapter(
+            key_id="rzp_test_validkey",
+            key_secret="test_secret",
+            http_client=fake_razorpay_http_client,
+        )
+        res = adapter.execute_action(
+            strategy="payment_link",
+            context=sample_context,
+            idempotency_key="idemp_injected_01",
+        )
+        assert res.strategy == "payment_link"
+        assert res.status == "completed"
+        assert res.reference_id == "plink_test_mocked_client_01"
+        fake_razorpay_http_client.post.assert_called_once()

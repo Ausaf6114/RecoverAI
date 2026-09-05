@@ -138,6 +138,20 @@ class TestGeminiDiagnosis:
         assert res.hypothesis == "OTP entry timed out"
         assert res.provider == "gemini"
 
+    def test_injected_gemini_http_client_is_used(self, fake_gemini_http_client):
+        diagnostician = GeminiDiagnostician(api_key="mock_key", http_client=fake_gemini_http_client)
+        ctx = PaymentContext(
+            payment_id="p_gem_inj",
+            customer_id="c_gem_inj",
+            merchant_id="m_gem_inj",
+            amount=100000,
+        )
+        res = diagnostician.diagnose(ctx)
+        assert res.failure_category == "authentication_failure"
+        assert "injected client mock" in res.hypothesis
+        assert res.provider == "gemini"
+        fake_gemini_http_client.post.assert_called_once()
+
 
 class TestAgentState:
     def test_state_lifecycle_transitions(self):

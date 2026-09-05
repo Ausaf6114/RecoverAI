@@ -29,6 +29,18 @@ class DiagnosisResult:
 
 
 _UNSET = object()
+_default_gemini_client: Optional[httpx.Client] = None
+
+
+def set_default_gemini_client(client: Optional[httpx.Client]) -> None:
+    """Sets a global default HTTP client for Gemini diagnosticians (used for mocking/testing)."""
+    global _default_gemini_client
+    _default_gemini_client = client
+
+
+def get_default_gemini_client() -> Optional[httpx.Client]:
+    """Returns the current default HTTP client for Gemini diagnosticians."""
+    return _default_gemini_client
 
 
 class GeminiDiagnostician:
@@ -36,11 +48,17 @@ class GeminiDiagnostician:
     Contextual failure diagnostician using Google Gemini structured JSON generation.
     """
 
-    def __init__(self, api_key: Any = _UNSET, model: str = "gemini-1.5-flash"):
+    def __init__(
+        self,
+        api_key: Any = _UNSET,
+        model: Optional[str] = None,
+        http_client: Optional[httpx.Client] = None,
+    ):
         settings = get_settings()
         self.api_key = settings.GEMINI_API_KEY if api_key is _UNSET else api_key
-        self.model = model
+        self.model = model or getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash")
         self.endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+        self.http_client = http_client if http_client is not None else get_default_gemini_client()
 
     def diagnose(self, context: PaymentContext) -> DiagnosisResult:
         """
@@ -97,10 +115,15 @@ Return ONLY valid JSON.
         }
 
         url = f"{self.endpoint}?key={self.api_key}"
-        with httpx.Client(timeout=10.0) as client:
-            resp = client.post(url, json=payload)
+        if self.http_client is not None:
+            resp = self.http_client.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()
+        else:
+            with httpx.Client(timeout=10.0) as client:
+                resp = client.post(url, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
 
         text_output = data["candidates"][0]["content"]["parts"][0]["text"]
         parsed = json.loads(text_output)

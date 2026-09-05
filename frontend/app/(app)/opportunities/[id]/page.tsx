@@ -172,18 +172,18 @@ export default function OpportunityDetailPage() {
 
   const timelineEvents: TimelineEvent[] = [
     {
-      icon: <AlertCircle size={13} color="#2563eb" />,
+      icon: <AlertCircle size={13} color="var(--accent)" />,
       label: "Opportunity Detected",
       detail: `Payment ${opp.payment_id} failed`,
       time: relativeTime(opp.detected_at),
-      color: "#2563eb",
+      color: "var(--accent)",
     },
   ];
 
   if (opp.diagnosis_summary) {
     timelineEvents.push({
       icon: <Cpu size={13} color="#7c3aed" />,
-      label: "Gemini Diagnosis",
+      label: "Gemini AI Diagnosis",
       detail: opp.diagnosis_summary,
       color: "#7c3aed",
     });
@@ -199,15 +199,15 @@ export default function OpportunityDetailPage() {
 
     if (decision.requires_approval) {
       timelineEvents.push({
-        icon: <Clock size={13} color="#d97706" />,
+        icon: <Clock size={13} color="#f59e0b" />,
         label: "Awaiting Merchant Approval",
-        color: "#d97706",
+        color: "#f59e0b",
       });
     } else if (decision.execution_status) {
       timelineEvents.push({
-        icon: <CheckCircle2 size={13} color="#059669" />,
+        icon: <CheckCircle2 size={13} color="var(--success)" />,
         label: `Executed: ${decision.execution_status}`,
-        color: "#059669",
+        color: "var(--success)",
       });
     }
   } else if (opp.selected_action) {
@@ -239,7 +239,7 @@ export default function OpportunityDetailPage() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
-          <h1 style={{ marginBottom: 6 }}>Opportunity Detail</h1>
+          <h1 style={{ marginBottom: 6, fontFamily: "var(--font-serif)" }}>Opportunity Detail</h1>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <Badge variant={statusVariant(opp.status)}>{opp.status}</Badge>
             <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
@@ -253,7 +253,11 @@ export default function OpportunityDetailPage() {
               variant="primary"
               onClick={handleApproveAndExecute}
               loading={deciding}
-              style={{ background: "#d97706" }}
+              style={{
+                background: "#f59e0b",
+                border: "1px solid #d97706",
+                boxShadow: "0 1px 3px rgba(245,158,11,0.28)",
+              }}
             >
               <CheckCircle2 size={14} /> Approve &amp; Execute
             </Button>

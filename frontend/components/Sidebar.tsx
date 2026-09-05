@@ -45,16 +45,17 @@ export default function Sidebar() {
       >
         <div
           style={{
-            width: 28,
-            height: 28,
-            background: "var(--accent)",
-            borderRadius: 6,
+            width: 30,
+            height: 30,
+            background: "var(--navy)",
+            borderRadius: 7,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            boxShadow: "0 2px 5px rgba(25, 40, 57, 0.15)",
           }}
         >
-          <Zap size={15} color="#fff" strokeWidth={2.5} />
+          <Zap size={16} color="var(--accent)" strokeWidth={2.5} />
         </div>
         <div>
           <div style={{ fontWeight: 600, fontSize: "0.875rem", letterSpacing: "-0.01em" }}>

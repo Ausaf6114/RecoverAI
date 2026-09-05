@@ -44,15 +44,19 @@ export default function ApprovalsPage() {
   const handleApprove = async (opp: OpportunitySummary) => {
     setActioning(opp.id);
     try {
-      // List actions for this opportunity isn't directly available,
-      // but we can try to approve/execute the latest action via opportunity detail.
-      // The action ID isn't in the list view — we fetch it from the detail.
-      const detail = await api.getOpportunity(opp.id);
-      // Re-run decision to surface the action
-      const decide = await api.decideOpportunity(opp.id);
-      // The action should now be in pending state — find it via opportunity actions
-      // Since API doesn't expose list-actions-for-opp, we use decide's opportunity_id
-      // and just signal approval is in progress
+      let actionId = opp.action_id;
+      if (!actionId) {
+        const detail = await api.getOpportunity(opp.id);
+        actionId = detail.action_id;
+      }
+      if (!actionId) {
+        const decide = await api.decideOpportunity(opp.id);
+        actionId = decide.action_id;
+      }
+      if (actionId) {
+        await api.approveAction(actionId);
+        await api.executeAction(actionId);
+      }
       setItems((prev) => prev.filter((i) => i.opp.id !== opp.id));
     } catch (e: unknown) {
       alert(`Error: ${e instanceof Error ? e.message : String(e)}`);

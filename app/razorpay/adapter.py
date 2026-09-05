@@ -36,6 +36,9 @@ class ExecutionResult:
     error_message: Optional[str] = None
 
 
+_UNSET = object()
+
+
 class RazorpayActionAdapter:
     """
     Adapter for dispatching approved recovery interventions to Razorpay APIs
@@ -44,13 +47,13 @@ class RazorpayActionAdapter:
 
     def __init__(
         self,
-        key_id: Optional[str] = None,
-        key_secret: Optional[str] = None,
+        key_id: Any = _UNSET,
+        key_secret: Any = _UNSET,
         base_url: str = "https://api.razorpay.com/v1",
     ):
         settings = get_settings()
-        self.key_id = key_id or settings.RAZORPAY_KEY_ID
-        self.key_secret = key_secret or settings.RAZORPAY_KEY_SECRET
+        self.key_id = settings.RAZORPAY_KEY_ID if key_id is _UNSET else key_id
+        self.key_secret = settings.RAZORPAY_KEY_SECRET if key_secret is _UNSET else key_secret
         self.base_url = base_url
 
         # Validate Test Mode safety

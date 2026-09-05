@@ -8,7 +8,7 @@ or during offline test execution.
 import json
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Any
 import httpx
 
 from app.core.config import get_settings
@@ -28,14 +28,17 @@ class DiagnosisResult:
     provider: str = "gemini"     # "gemini" or "deterministic_fallback"
 
 
+_UNSET = object()
+
+
 class GeminiDiagnostician:
     """
     Contextual failure diagnostician using Google Gemini structured JSON generation.
     """
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: Any = _UNSET, model: str = "gemini-1.5-flash"):
         settings = get_settings()
-        self.api_key = api_key or settings.GEMINI_API_KEY
+        self.api_key = settings.GEMINI_API_KEY if api_key is _UNSET else api_key
         self.model = model
         self.endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
 

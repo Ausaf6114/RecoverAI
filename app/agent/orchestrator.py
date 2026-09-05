@@ -174,21 +174,19 @@ class RecoverAIOrchestrator:
         action_id = f"act_{uuid.uuid4().hex[:12]}"
         state.action_id = action_id
 
+        # Check approval requirement before external dispatch
+        idempotency_key = f"idemp_{state.opportunity_id}_{action_name}"
+        ext_ref = None
+        ext_url = None
+
         if action_name == "no_action":
             state.execution_status = "completed"
             if session is not None and state.opportunity_id:
                 opp = session.get(RecoveryOpportunity, state.opportunity_id)
                 if opp:
                     opp.status = OpportunityStatus.no_action.value
-            state.transition(AgentStage.EXECUTED, "Executed 'no_action'; opportunity closed.")
-            return
-
-        # Check approval requirement before external dispatch
-        idempotency_key = f"idemp_{state.opportunity_id}_{action_name}"
-        ext_ref = None
-        ext_url = None
-
-        if not state.decision.requires_approval:
+            ext_ref = f"noop_{idempotency_key}"
+        elif not state.decision.requires_approval:
             # Auto-execute via Razorpay adapter
             exec_res = self.razorpay_adapter.execute_action(
                 strategy=action_name,

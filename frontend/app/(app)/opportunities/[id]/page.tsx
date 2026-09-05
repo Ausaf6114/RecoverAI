@@ -122,7 +122,45 @@ export default function OpportunityDetailPage() {
     api.decideOpportunity(id)
       .then((d) => {
         setDecision(d);
-        setOpp((prev) => prev ? { ...prev, selected_action: d.selected_action, requires_approval: d.requires_approval, diagnosis_summary: d.diagnosis_hypothesis } : prev);
+        setOpp((prev) => prev ? {
+          ...prev,
+          selected_action: d.selected_action,
+          requires_approval: d.requires_approval,
+          diagnosis_summary: d.diagnosis_hypothesis,
+          action_id: d.action_id || prev.action_id,
+          action_status: d.requires_approval ? "pending" : (d.execution_status || "completed"),
+          external_reference_id: d.external_reference_id,
+          external_reference_url: d.external_reference_url,
+        } : prev);
+      })
+      .catch((e) => setDecideError(e.message))
+      .finally(() => setDeciding(false));
+  };
+
+  const handleApproveAndExecute = () => {
+    const actId = decision?.action_id || opp?.action_id;
+    if (!actId) return;
+    setDeciding(true);
+    setDecideError(null);
+    api.approveAction(actId)
+      .then(() => api.executeAction(actId))
+      .then((res) => {
+        setOpp((prev) => prev ? {
+          ...prev,
+          action_status: res.status,
+          external_reference_id: res.external_reference_id,
+          external_reference_url: res.external_reference_url,
+          status: "in_progress",
+        } : prev);
+        if (decision) {
+          setDecision((prev) => prev ? {
+            ...prev,
+            requires_approval: false,
+            execution_status: res.status,
+            external_reference_id: res.external_reference_id,
+            external_reference_url: res.external_reference_url,
+          } : prev);
+        }
       })
       .catch((e) => setDecideError(e.message))
       .finally(() => setDeciding(false));
@@ -209,14 +247,26 @@ export default function OpportunityDetailPage() {
             </span>
           </div>
         </div>
-        <Button
-          variant="primary"
-          onClick={handleDecide}
-          loading={deciding}
-          disabled={opp.status === "recovered"}
-        >
-          <Cpu size={14} /> Run AI Decision
-        </Button>
+        <div style={{ display: "flex", gap: 10 }}>
+          {((opp.requires_approval || decision?.requires_approval) && (opp.action_status === "pending" || decision?.execution_status === "pending")) && (
+            <Button
+              variant="primary"
+              onClick={handleApproveAndExecute}
+              loading={deciding}
+              style={{ background: "#d97706" }}
+            >
+              <CheckCircle2 size={14} /> Approve &amp; Execute
+            </Button>
+          )}
+          <Button
+            variant={opp.selected_action || decision ? "secondary" : "primary"}
+            onClick={handleDecide}
+            loading={deciding}
+            disabled={opp.status === "recovered"}
+          >
+            <Cpu size={14} /> {opp.selected_action || decision ? "Re-run AI Decision" : "Run AI Decision"}
+          </Button>
+        </div>
       </div>
 
       {decideError && (
@@ -266,6 +316,24 @@ export default function OpportunityDetailPage() {
                 <KV label="Expected Recovery Value" value={`₹${decision.expected_recovery_value.toFixed(2)}`} />
                 <KV label="Requires Approval" value={decision.requires_approval ? "Yes" : "No"} />
                 <KV label="Execution Status" value={decision.execution_status ?? "—"} />
+                {(decision.external_reference_url || opp.external_reference_url) && (
+                  <KV
+                    label="Payment Link"
+                    value={
+                      <a
+                        href={decision.external_reference_url || opp.external_reference_url || "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: "var(--accent)", textDecoration: "underline", fontSize: "0.75rem", wordBreak: "break-all" }}
+                      >
+                        {decision.external_reference_url || opp.external_reference_url}
+                      </a>
+                    }
+                  />
+                )}
+                {(decision.external_reference_id || opp.external_reference_id) && (
+                  <KV label="Reference ID" value={<span style={{ fontFamily: "monospace", fontSize: "0.75rem" }}>{decision.external_reference_id || opp.external_reference_id}</span>} />
+                )}
                 {decision.diagnosis_category && (
                   <KV label="Failure Category" value={decision.diagnosis_category} />
                 )}

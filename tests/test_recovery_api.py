@@ -129,6 +129,28 @@ class TestActionsAPI:
         response = client.get("/recovery/actions/act_non_existent")
         assert response.status_code == 404
 
+    def test_list_actions(self, setup_api_data):
+        opp_id, act_id = setup_api_data
+        resp = client.get("/recovery/actions")
+        assert resp.status_code == 200
+        actions = resp.json()
+        assert len(actions) >= 1
+        assert any(a["id"] == act_id for a in actions)
+
+        # Filter by status
+        resp_pending = client.get("/recovery/actions?status=pending")
+        assert resp_pending.status_code == 200
+        pending_actions = resp_pending.json()
+        assert all(a["status"] == "pending" for a in pending_actions)
+
+    def test_cannot_execute_before_approval(self, setup_api_data):
+        """Approval-gated action cannot execute before approval."""
+        _, act_id = setup_api_data
+        # Attempt to execute while still pending approval
+        bad_exec = client.post(f"/recovery/actions/{act_id}/execute")
+        assert bad_exec.status_code == 400
+        assert "pending approval" in bad_exec.json()["detail"]
+
     def test_approve_and_execute_action_lifecycle(self, setup_api_data):
         _, act_id = setup_api_data
 
@@ -148,3 +170,10 @@ class TestActionsAPI:
         exec_data = exec_resp.json()
         assert exec_data["status"] == ActionStatus.completed.value
         assert exec_data["external_reference_id"] is not None
+
+        # 4. Repeated execution is idempotent
+        exec_resp_dup = client.post(f"/recovery/actions/{act_id}/execute")
+        assert exec_resp_dup.status_code == 200
+        dup_data = exec_resp_dup.json()
+        assert dup_data["external_reference_id"] == exec_data["external_reference_id"]
+        assert dup_data["status"] == ActionStatus.completed.value

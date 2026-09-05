@@ -47,6 +47,10 @@ export interface OpportunitySummary {
   recovered_amount: number | null;
   detected_at: string | null;
   dataset_split: string;
+  action_id?: string | null;
+  action_status?: string | null;
+  selected_action?: string | null;
+  requires_approval?: boolean;
 }
 
 export interface OpportunityDetail extends OpportunitySummary {
@@ -57,6 +61,8 @@ export interface OpportunityDetail extends OpportunitySummary {
   selected_action: string | null;
   requires_approval: boolean;
   diagnosis_summary: string | null;
+  external_reference_id?: string | null;
+  external_reference_url?: string | null;
 }
 
 export interface DecideResponse {
@@ -67,6 +73,9 @@ export interface DecideResponse {
   expected_recovery_value: number;
   requires_approval: boolean;
   execution_status: string | null;
+  action_id?: string | null;
+  external_reference_id?: string | null;
+  external_reference_url?: string | null;
   diagnosis_category: string | null;
   diagnosis_hypothesis: string | null;
   rationale: string;
@@ -103,6 +112,16 @@ export const api = {
 
   decideOpportunity: (id: string) =>
     apiFetch<DecideResponse>(`/recovery/opportunities/${id}/decide`, { method: "POST" }),
+
+  listActions: (params?: { status?: string; opportunity_id?: string; limit?: number; offset?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set("status", params.status);
+    if (params?.opportunity_id) qs.set("opportunity_id", params.opportunity_id);
+    if (params?.limit) qs.set("limit", String(params.limit));
+    if (params?.offset) qs.set("offset", String(params.offset));
+    const query = qs.toString() ? `?${qs}` : "";
+    return apiFetch<ActionResponse[]>(`/recovery/actions${query}`);
+  },
 
   getAction: (id: string) =>
     apiFetch<ActionResponse>(`/recovery/actions/${id}`),

@@ -1,11 +1,14 @@
 import json
 import hashlib
+import logging
 from typing import Optional
 from fastapi import APIRouter, Request, HTTPException, status, Header, Depends
 from app.core.config import get_settings, Settings
 from app.core.security import verify_razorpay_signature
 from app.db.events import WebhookEventRepository
 from app.schemas.webhook import parse_razorpay_event
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -33,6 +36,7 @@ async def handle_razorpay_webhook(
     """
     # 1. Require signature header
     if not x_razorpay_signature:
+        logger.warning("Webhook rejection [400]: Missing X-Razorpay-Signature header")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Missing X-Razorpay-Signature header"
@@ -51,6 +55,7 @@ async def handle_razorpay_webhook(
 
     # 4. Verify signature BEFORE parsing or processing
     if not verify_razorpay_signature(raw_body, x_razorpay_signature, secret):
+        logger.warning("Webhook rejection [400]: Invalid webhook signature")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid webhook signature"
@@ -62,6 +67,7 @@ async def handle_razorpay_webhook(
         if not isinstance(payload, dict):
             raise ValueError("Payload must be a JSON object")
     except Exception:
+        logger.warning("Webhook rejection [400]: Malformed JSON payload")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Malformed JSON payload"

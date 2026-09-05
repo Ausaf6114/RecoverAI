@@ -1,6 +1,9 @@
 import hmac
 import hashlib
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def verify_razorpay_signature(
@@ -13,7 +16,11 @@ def verify_razorpay_signature(
     
     NEVER logs or exposes the webhook secret or raw credentials.
     """
-    if not signature or not webhook_secret:
+    if not signature:
+        logger.warning("HMAC verification failed: signature is missing or empty")
+        return False
+    if not webhook_secret:
+        logger.warning("HMAC verification failed: webhook_secret is missing or empty")
         return False
 
     try:
@@ -23,6 +30,10 @@ def verify_razorpay_signature(
             digestmod=hashlib.sha256
         ).hexdigest()
 
-        return hmac.compare_digest(expected_signature, signature)
-    except Exception:
+        match = hmac.compare_digest(expected_signature, signature.strip())
+        if not match:
+            logger.warning("HMAC verification failed: signature mismatch (invalid HMAC)")
+        return match
+    except Exception as e:
+        logger.warning("HMAC verification failed with exception: %s", type(e).__name__)
         return False

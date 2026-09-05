@@ -1,0 +1,17 @@
+# RecoverAI — Phase 0 Backend Dependencies
+# Generated for Python 3.13 / production-compatible
+
+# Web framework
+fastapi==0.141.1
+uvicorn==0.52.4
+
+# Settings / env loading
+pydantic==2.13.5
+pydantic-settings==2.15.0
+python-dotenv==1.2.3
+
+# HTTP transport (used by FastAPI TestClient via httpx)
+httpx==0.28.1
+
+# Testing
+pytest==9.1.1

@@ -1,0 +1,32 @@
+# Secrets — NEVER commit these
+.env
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# SQLite databases (Phase 0 persistence — gitignored, not committed)
+*.db
+*.sqlite
+*.sqlite3
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build / distribution artefacts
+dist/
+build/
+*.egg-info/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

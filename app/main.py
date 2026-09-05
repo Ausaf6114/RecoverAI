@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.db.session import init_db, init_domain_db
 from app.api.webhooks import router as webhooks_router
@@ -23,6 +24,18 @@ app = FastAPI(
     version="0.1.0",
     description="RecoverAI Decision and Revenue Recovery Orchestration Backend",
     lifespan=lifespan
+)
+
+# Allow the Next.js dev server (and any future domain) to call the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Register routers

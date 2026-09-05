@@ -117,8 +117,32 @@ async def handle_razorpay_webhook(
             "message": "Event already processed"
         }
 
-    return {
+    # 10. Attribute outcome to recovery actions (if recovery-confirming event)
+    attribution_info = None
+    if parsed.event_type in ("payment.captured", "payment_link.paid"):
+        try:
+            from app.db.session import get_db_session
+            from app.agent.attribution import attribute_webhook_event
+            with get_db_session() as db_session:
+                attribution_info = attribute_webhook_event(
+                    event_id=parsed.event_id,
+                    event_type=parsed.event_type,
+                    payment_id=parsed.payment_id,
+                    payment_link_id=parsed.payment_link_id,
+                    order_id=parsed.order_id,
+                    amount=parsed.amount,
+                    session=db_session,
+                )
+        except Exception as e:
+            logger.warning(f"Attribution processing error for event {parsed.event_id}: {e}")
+
+    resp = {
         "status": "received",
         "event_id": event_id,
         "event_type": parsed.event_type
     }
+    if attribution_info and attribution_info.get("attributed"):
+        resp["attributed"] = True
+        resp["recovered_amount"] = attribution_info.get("recovered_amount")
+
+    return resp

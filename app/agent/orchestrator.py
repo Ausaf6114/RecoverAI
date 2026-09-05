@@ -15,6 +15,7 @@ from app.agent.state import AgentState, AgentStage
 from app.agent.context_builder import build_payment_context_from_db
 from app.agent.diagnosis import GeminiDiagnostician, DiagnosisResult
 from app.agent.decision_engine import RecoveryDecisionEngine, DecisionResult
+from app.razorpay.adapter import RazorpayActionAdapter, ExecutionResult
 from app.db.models import (
     RecoveryOpportunity,
     AgentDecision,
@@ -35,9 +36,11 @@ class RecoverAIOrchestrator:
         self,
         diagnostician: Optional[GeminiDiagnostician] = None,
         decision_engine: Optional[RecoveryDecisionEngine] = None,
+        razorpay_adapter: Optional[RazorpayActionAdapter] = None,
     ):
         self.diagnostician = diagnostician or GeminiDiagnostician()
         self.decision_engine = decision_engine or RecoveryDecisionEngine()
+        self.razorpay_adapter = razorpay_adapter or RazorpayActionAdapter()
 
     def run_pipeline(
         self,
@@ -180,9 +183,21 @@ class RecoverAIOrchestrator:
             state.transition(AgentStage.EXECUTED, "Executed 'no_action'; opportunity closed.")
             return
 
-        # Prepare external reference ID (staged mock reference for Phase 3)
-        ext_ref = f"staged_{action_name}_{state.payment_id}"
-        state.external_reference_id = ext_ref
+        # Check approval requirement before external dispatch
+        idempotency_key = f"idemp_{state.opportunity_id}_{action_name}"
+        ext_ref = None
+        ext_url = None
+
+        if not state.decision.requires_approval:
+            # Auto-execute via Razorpay adapter
+            exec_res = self.razorpay_adapter.execute_action(
+                strategy=action_name,
+                context=state.context,
+                idempotency_key=idempotency_key,
+            )
+            ext_ref = exec_res.reference_id
+            ext_url = exec_res.reference_url
+            state.external_reference_id = ext_ref
 
         # Persist action record if DB session is active
         if session is not None and state.opportunity_id:
@@ -218,15 +233,27 @@ class RecoverAIOrchestrator:
                 strategy=action_name,
                 status=db_status,
                 external_reference_id=ext_ref,
-                idempotency_key=f"idemp_{state.opportunity_id}_{action_name}",
+                external_reference_url=ext_url,
+                idempotency_key=idempotency_key,
                 created_at=datetime.now(timezone.utc),
                 executed_at=datetime.now(timezone.utc) if db_status == ActionStatus.completed.value else None,
             )
             session.add(db_action)
+
+            # 3. Action Audit Record
+            act_audit = AuditEvent(
+                id=f"aud_{uuid.uuid4().hex[:12]}",
+                entity_type="action",
+                entity_id=action_id,
+                event_type="action.dispatched" if db_status == ActionStatus.completed.value else "action.held_for_approval",
+                detail=f"Action '{action_name}' staged with reference '{ext_ref}' (idempotency: '{idempotency_key}').",
+                created_at=datetime.now(timezone.utc),
+            )
+            session.add(act_audit)
             session.flush()
 
         status_label = "pending_approval" if state.decision.requires_approval else "executed"
-        state.transition(AgentStage.EXECUTED, f"Action '{action_name}' status: {status_label} (ID: {action_id}).")
+        state.transition(AgentStage.EXECUTED, f"Action '{action_name}' status: {status_label} (ID: {action_id}, Ref: {ext_ref}).")
 
     def measure(
         self,

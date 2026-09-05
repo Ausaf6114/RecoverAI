@@ -138,12 +138,39 @@ def execute_action(
             executed_at=action.executed_at.isoformat() if action.executed_at else None,
         )
 
-    # In Phase 3, mock-execute and set reference
+    from app.agent.context_builder import build_payment_context_from_db
+    from app.razorpay.adapter import RazorpayActionAdapter
+    from app.db.models import RecoveryOpportunity, AuditEvent
+
+    opp = db.get(RecoveryOpportunity, action.opportunity_id)
+    adapter = RazorpayActionAdapter()
+
+    if opp:
+        context = build_payment_context_from_db(opp.payment_id, db)
+        if context:
+            exec_res = adapter.execute_action(
+                strategy=action.strategy,
+                context=context,
+                idempotency_key=action.idempotency_key or f"idemp_{action.id}",
+            )
+            action.external_reference_id = exec_res.reference_id
+            action.external_reference_url = exec_res.reference_url
+
     action.status = ActionStatus.completed.value
     action.executed_at = datetime.now(timezone.utc)
     if not action.external_reference_id:
         action.external_reference_id = f"exec_{action.strategy}_{action.id}"
 
+    # Audit log
+    audit = AuditEvent(
+        id=f"aud_{action.id[:12]}",
+        entity_type="action",
+        entity_id=action.id,
+        event_type="action.manually_executed",
+        detail=f"Action '{action.strategy}' executed via API with reference '{action.external_reference_id}'.",
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(audit)
     db.flush()
 
     return ActionResponse(

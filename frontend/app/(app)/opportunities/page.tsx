@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api, OpportunitySummary } from "@/lib/api";
@@ -22,7 +22,7 @@ import {
 
 const STATUS_FILTERS = ["all", "open", "pending", "completed", "recovered"];
 
-export default function OpportunitiesPage() {
+function OpportunitiesContent() {
   const searchParams = useSearchParams();
   const initialStatus = searchParams.get("status") ?? "all";
 
@@ -174,5 +174,13 @@ export default function OpportunitiesPage() {
         </Card>
       </Section>
     </div>
+  );
+}
+
+export default function OpportunitiesPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <OpportunitiesContent />
+    </Suspense>
   );
 }
